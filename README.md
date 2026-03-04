@@ -8,7 +8,6 @@ Desarrollado y probado con *Cuentos Completos* de Franz Kafka (traducción de Jo
 
 ## Tabla de Contenidos
 
-- [Versiones disponibles](#versiones-disponibles)
 - [Requisitos](#requisitos)
 - [Instalación](#instalación)
 - [Estructura del proyecto](#estructura-del-proyecto)
@@ -22,42 +21,8 @@ Desarrollado y probado con *Cuentos Completos* de Franz Kafka (traducción de Jo
 
 ---
 
-## Versiones disponibles
-
-El proyecto tiene dos implementaciones con el mismo objetivo pero distinta arquitectura:
-
-### Versión A — Transformers + Pysentimiento
-Usa modelos de HuggingFace que corren directamente en Python. No requiere servicios externos pero sí una instalación más pesada y preferiblemente GPU.
-
-```
-anthology_analysis_transformers.py
-```
-
-| Componente | Modelo | Tarea |
-|---|---|---|
-| NER | `mrm8488/bert-spanish-cased-finetuned-ner` | Extracción de personajes |
-| Emociones | `pysentimiento` (lang=es) | Clasificación emocional |
-
-### Versión B — Ollama (recomendada)
-Usa un LLM local a través de Ollama. Mejor comprensión del contexto narrativo, detección de interacciones más precisa y sin límite de tokens por oración.
-
-```
-anthology_analysis.py
-```
-
-| Componente | Modelo recomendado | Tarea |
-|---|---|---|
-| LLM | `qwen2.5:14b` | Personajes, emociones e interacciones |
-
----
-
 ## Requisitos
 
-### Versión Transformers
-- Python 3.10 o superior
-- GPU recomendada (CUDA)
-
-### Versión Ollama
 - Python 3.10 o superior
 - Ollama instalado: https://ollama.com
 - GPU recomendada — guía de modelos según VRAM:
@@ -79,6 +44,8 @@ anthology_analysis.py
 python -m venv .venv
 ```
 
+Crea un entorno aislado en `.venv`. Evita conflictos entre versiones de librerías de distintos proyectos.
+
 ### 2. Activar el entorno virtual
 
 ```bash
@@ -89,19 +56,15 @@ source .venv/bin/activate
 .venv\Scripts\activate
 ```
 
+Redirige `python` y `pip` al entorno aislado. El prompt mostrará `(.venv)` cuando esté activo.
+
 ### 3. Instalar dependencias
 
-**Versión Transformers:**
-```bash
-pip install transformers torch networkx matplotlib pdfplumber pysentimiento
-```
-
-**Versión Ollama:**
 ```bash
 pip install pdfplumber networkx matplotlib numpy requests pyvis
 ```
 
-### 4. Configurar Ollama (solo versión Ollama)
+### 4. Configurar Ollama
 
 ```bash
 # Descargar el modelo
@@ -127,8 +90,7 @@ proyecto/
 │   ├── cuento_01_21__la_condena.png   # Grafo estático por cuento
 │   ├── cuento_01_21__la_condena.html  # Grafo interactivo por cuento
 │   └── resumen_antologia.png          # Gráfico comparativo general
-├── anthology_analysis.py              # Script principal (versión Ollama)
-├── anthology_analysis_transformers.py # Script alternativo (versión Transformers)
+├── anthology_analysis.py              # Script principal
 └── README.md
 ```
 
@@ -195,11 +157,8 @@ Reporte con personajes identificados, emoción dominante y distribución complet
 | `pip install networkx` | Creación y análisis de grafos de red |
 | `pip install matplotlib` | Generación de gráficos e imágenes PNG |
 | `pip install numpy` | Operaciones numéricas para el gráfico de resumen |
-| `pip install requests` | Comunicación HTTP con la API de Ollama |
+| `pip install requests` | Comunicación HTTP con la API local de Ollama |
 | `pip install pyvis` | Generación de grafos interactivos en HTML |
-| `pip install transformers` | Modelos NLP de HuggingFace (solo versión Transformers) |
-| `pip install torch` | Framework de deep learning para los modelos (solo versión Transformers) |
-| `pip install pysentimiento` | Análisis de emociones en español (solo versión Transformers) |
 
 ### Comandos de Ollama
 
@@ -217,14 +176,14 @@ Reporte con personajes identificados, emoción dominante y distribución complet
 |---|---|
 | `nvidia-smi` | Muestra VRAM disponible y uso actual de la GPU |
 | `print(repr(full_text[:2000]))` | Muestra caracteres ocultos del texto extraído del PDF para diagnosticar ruido |
-| `print(repr(linea))` | Muestra una línea con todos sus caracteres visibles para depurar regex de títulos |
+| `print(repr(linea))` | Muestra una línea con todos sus caracteres visibles para depurar el regex de títulos |
 
 ### Ejecución del script
 
 | Comando | Propósito |
 |---|---|
 | `python anthology_analysis.py archivo.pdf` | Analiza toda la antología con carpeta de salida por defecto |
-| `python anthology_analysis.py archivo.pdf carpeta/` | Analiza toda la antología y guarda resultados en carpeta indicada |
+| `python anthology_analysis.py archivo.pdf carpeta/` | Analiza toda la antología y guarda resultados en la carpeta indicada |
 | `python anthology_analysis.py archivo.pdf carpeta/ "TITULO"` | Analiza solo el cuento cuyo título contenga el texto indicado |
 
 ---
@@ -255,7 +214,7 @@ Todos al inicio de `anthology_analysis.py`:
 # Modelo de Ollama a utilizar
 OLLAMA_MODEL = "qwen2.5:14b"
 
-# URL del servidor Ollama (cambiar si corre en otro equipo)
+# URL del servidor Ollama (cambiar si corre en otro equipo o puerto)
 OLLAMA_URL = "http://localhost:11434/api/generate"
 
 # Límite de palabras enviadas al LLM para interacciones
@@ -277,26 +236,26 @@ MAX_WORDS_FOR_INTERACTIONS = None
 PDF
  │
  ▼
-extract_text_from_pdf()   → Extrae texto con pdfplumber
+extract_text_from_pdf()      → Extrae texto con pdfplumber
  │
  ▼
-clean_text()              → Limpia ruido del PDF (números de página,
- │                          encabezados, caracteres especiales)
+clean_text()                 → Limpia ruido del PDF (números de página,
+ │                             encabezados, caracteres especiales)
  ▼
-join_split_titles()       → Une títulos que quedaron partidos en dos líneas
+join_split_titles()          → Une títulos que quedaron partidos en dos líneas
  │
  ▼
-split_into_stories()      → Divide en cuentos usando TITLE_PATTERN (regex)
+split_into_stories()         → Divide en cuentos usando TITLE_PATTERN (regex)
  │
  ├─ Por cada cuento:
  │   │
- │   ├── extract_characters()        → LLM identifica nombres propios
- │   ├── count_emotions()            → LLM clasifica distribución emocional
- │   ├── build_interaction_graph()   → LLM detecta interacciones entre personajes
- │   ├── plot_story_graph_static()   → Genera PNG con kamada_kawai_layout
+ │   ├── extract_characters()           → LLM identifica nombres propios
+ │   ├── count_emotions()               → LLM clasifica distribución emocional
+ │   ├── build_interaction_graph()      → LLM detecta interacciones entre personajes
+ │   ├── plot_story_graph_static()      → Genera PNG con kamada_kawai_layout
  │   └── plot_story_graph_interactive() → Genera HTML interactivo con pyvis
  │
- └── plot_summary()                  → Gráfico comparativo de toda la antología
+ └── plot_summary()                     → Gráfico comparativo de toda la antología
 ```
 
 ### Detección de títulos
@@ -310,6 +269,18 @@ número  TODO EN MAYÚSCULAS
 
 Si un título queda partido en dos líneas por el PDF, `join_split_titles()` las une antes de aplicar el regex.
 
+### Comunicación con Ollama
+
+Python se comunica con Ollama a través de su API REST local. Cada tarea (personajes, emociones, interacciones) es una llamada separada con un prompt estructurado que instruye al modelo a responder únicamente en JSON:
+
+```python
+requests.post("http://localhost:11434/api/generate", json={
+    "model": "qwen2.5:14b",
+    "prompt": "...",
+    "options": {"temperature": 0.0}
+})
+```
+
 ### Grafo de interacciones
 
 El LLM analiza el cuento completo y devuelve un JSON con los pares de personajes que interactúan, la emoción dominante de cada relación y el número aproximado de interacciones:
@@ -317,7 +288,7 @@ El LLM analiza el cuento completo y devuelve un JSON con los pares de personajes
 ```json
 [
   {"personaje_a": "Georg", "personaje_b": "El Padre", "emocion": "enojo", "interacciones": 5},
-  {"personaje_a": "Georg", "personaje_b": "Frieda", "emocion": "alegria", "interacciones": 2}
+  {"personaje_a": "Georg", "personaje_b": "Frieda",   "emocion": "alegria", "interacciones": 2}
 ]
 ```
 
@@ -339,8 +310,8 @@ Cada arista del grafo hereda el color de la emoción y el grosor según el núme
 
 ## Decisiones de diseño
 
-**¿Por qué Ollama en lugar de modelos de HuggingFace?**
-Los modelos de HuggingFace como BERT tienen límite de 512 tokens por entrada, lo que obliga a dividir el texto en chunks y perder contexto narrativo. Un LLM con Ollama puede leer el cuento completo de una vez y razonar sobre las relaciones entre personajes con todo el contexto disponible.
+**¿Por qué Ollama?**
+Un LLM local puede leer el cuento completo de una vez y razonar sobre las relaciones entre personajes con todo el contexto disponible, sin necesidad de dividir el texto en fragmentos.
 
 **¿Por qué `kamada_kawai_layout` en el PNG?**
 El layout `spring_layout` (por defecto en networkx) produce grafos saturados cuando hay muchos nodos. `kamada_kawai` minimiza los cruces de aristas y distribuye los nodos de forma más equilibrada.
@@ -348,8 +319,8 @@ El layout `spring_layout` (por defecto en networkx) produce grafos saturados cua
 **¿Por qué pyvis para el HTML?**
 pyvis genera un HTML autocontenido que se abre en cualquier navegador sin servidor. Permite reorganizar el grafo arrastrando nodos, hacer zoom y ver detalles en hover — algo imposible con una imagen estática.
 
-**¿Por qué truncar el texto para modelos pequeños?**
-Modelos de 3B como `llama3.2` se saturan con textos largos y devuelven JSON malformado o vacío. `MAX_WORDS_FOR_INTERACTIONS` permite controlar cuánto texto se envía según la capacidad del modelo. Con 14B+ se puede poner `None`.
-
 **¿Por qué `temperature: 0.0`?**
 Las tareas de extracción de entidades y generación de JSON estructurado requieren respuestas deterministas. Con temperatura 0 el modelo siempre elige el token más probable, lo que reduce variabilidad y mejora la consistencia del JSON generado.
+
+**¿Por qué `MAX_WORDS_FOR_INTERACTIONS = None` con modelos grandes?**
+Modelos pequeños (3B) se saturan con textos largos y devuelven JSON malformado. Con 14B+ el modelo maneja sin problema cuentos de 15k palabras, por lo que no hay razón para truncar y perder contexto narrativo.
